@@ -1,4 +1,4 @@
-name: Docker Image Sync to ACR
+name: "Docker Image Sync to ACR"
 
 on:
   workflow_dispatch:
@@ -21,15 +21,23 @@ jobs:
 
       - name: Pull and Push to Aliyun
         run: |
+          # 1. 获取输入值
           RAW_IMAGE="${{ github.event.inputs.image_name }}"
-      
+          
+          # 2. 从 Docker Hub 拉取
+          echo "📥 正在拉取源镜像: $RAW_IMAGE"
           docker pull "$RAW_IMAGE"
           
-          SAFE_TAG=$(echo "$RAW_IMAGE" | sed 's/[\/:]/_/g')
+          # 3. 核心修复：处理标签格式（包含小写转换）
+          # sed 's/[\/:]/_/g' : 将 / 和 : 替换为 _
+          # tr '[:upper:]' '[:lower:]' : 将大写字母强制转为小写，解决 Docker 规范报错
+          SAFE_TAG=$(echo "$RAW_IMAGE" | sed 's/[\/:]/_/g' | tr '[:upper:]' '[:lower:]')
           
-          # 推送时依然可以使用 Secret 确保安全
+          # 4. 拼接最终镜像地址
           TARGET_IMAGE="crpi-tjpbhu7ev24zh1rq.cn-hangzhou.personal.cr.aliyuncs.com/garendeng_zhanhao/james-hub:$SAFE_TAG"
           
+          # 5. 打标签并推送
+          echo "📤 正在推送至阿里云: $TARGET_IMAGE"
           docker tag "$RAW_IMAGE" "$TARGET_IMAGE"
           docker push "$TARGET_IMAGE"
           
@@ -37,13 +45,9 @@ jobs:
           echo "✅ 同步成功！"
           echo "🚀 阿里云拉取命令："
           echo "docker pull $TARGET_IMAGE" 
-          echo "📦源镜像名称: $RAW_IMAGE"
-          echo "🏷️转换后标签: $SAFE_TAG"
+          echo "📦 源镜像名称: $RAW_IMAGE"
+          echo "🏷️ 转换后标签: $SAFE_TAG"
           echo "=========================================================="
-
-
-
-
 
 
 
