@@ -15,7 +15,7 @@ jobs:
       - name: Login to Alibaba Cloud ACR
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.ACR_REGISTRY }}
+          registry: crpi-tjpbhu7ev24zh1rq.cn-hangzhou.personal.cr.aliyuncs.com
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
@@ -38,6 +38,7 @@ jobs:
           echo "🚀 阿里云拉取命令："
           echo "docker pull $TARGET_IMAGE" 
           echo "=========================================================="
+
 
 
 
