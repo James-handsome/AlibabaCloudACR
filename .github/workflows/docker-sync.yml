@@ -37,7 +37,10 @@ jobs:
           echo "✅ 同步成功！"
           echo "🚀 阿里云拉取命令："
           echo "docker pull $TARGET_IMAGE" 
+          echo "📦源镜像名称: $RAW_IMAGE"
+          echo "🏷️转换后标签: $SAFE_TAG"
           echo "=========================================================="
+
 
 
 
