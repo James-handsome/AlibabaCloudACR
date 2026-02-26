@@ -1,0 +1,50 @@
+name: Update Image List
+
+on:
+  schedule:
+    - cron: '0 * * * *' # 每小时运行一次
+  workflow_dispatch: # 支持手动点运行
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch from Aliyun
+        env:
+          AK_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          AK_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+        run: |
+          pip install alibabacloud_cr20181201==2.0.2
+          python - <<EOF
+          import os, json
+          from alibabacloud_cr20181201.client import Client
+          from alibabacloud_tea_openapi import models as open_api_models
+          from alibabacloud_cr20181201 import models as cr_20181201_models
+
+          config = open_api_models.Config(access_key_id=os.environ['AK_ID'], access_key_secret=os.environ['AK_SECRET'], region_id='cn-hangzhou')
+          client = Client(config)
+          
+          # 查询你的 james-hub 仓库
+          request = cr_20181201_models.ListRepoTagRequest(
+              instance_id='crpi-tjpbhu7ev24zh1rq',
+              namespace_name='garendeng_zhanhao',
+              repo_name='james-hub',
+              page_size=100
+          )
+          response = client.list_repo_tag(request)
+          tags = [item.tag for item in response.body.images]
+          
+          with open('data.json', 'w') as f:
+              json.dump({"images": tags, "update_time": os.popen('date').read().strip()}, f)
+          EOF
+
+      - name: Push data.json
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add data.json
+          git commit -m "update list" || exit 0
+          git push
