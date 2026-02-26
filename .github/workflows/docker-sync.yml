@@ -21,15 +21,27 @@ jobs:
 
       - name: Pull and Push to Aliyun
         run: |
-          # 1. 从 Docker Hub 拉取 (Actions 运行环境在海外，拉取很快)
-          docker pull ${{ github.event.inputs.image_name }}
+          # 1. 获取输入值
+          RAW_IMAGE="${{ github.event.inputs.image_name }}"
           
-          # 2. 这里的路径必须与你截图中的“公网地址/命名空间/仓库名”完全对应
-          # 注意：这里的 garendeng_zhanhao/james-hub 是从你截图里推导出来的
-          TARGET_IMAGE="${{ secrets.ACR_REGISTRY }}/garendeng_zhanhao/james-hub:${{ github.event.inputs.image_name }}"
+          # 2. 从 Docker Hub 拉取 (GitHub 海外环境速度极快)
+          docker pull $RAW_IMAGE
           
-          # 3. 打标签并推送到阿里云
-          docker tag ${{ github.event.inputs.image_name }} $TARGET_IMAGE
+          # 3. 核心修复：处理标签格式
+          # 将镜像名中的冒号替换为下划线，确保生成的 TARGET_IMAGE 只有一个冒号
+          # 例如: mysql:8.0 -> mysql_8.0
+          SAFE_TAG=$(echo $RAW_IMAGE | sed 's/:/_/g')
+          
+          # 4. 拼接最终镜像地址
+          # 格式：Registry地址/命名空间/仓库名:新标签
+          TARGET_IMAGE="${{ secrets.ACR_REGISTRY }}/garendeng_zhanhao/james-hub:$SAFE_TAG"
+          
+          # 5. 打标签并推送
+          docker tag $RAW_IMAGE $TARGET_IMAGE
           docker push $TARGET_IMAGE
           
-          echo "同步完成！镜像地址为: $TARGET_IMAGE"
+          echo "=========================================================="
+          echo "✅ 同步成功！"
+          echo "🚀 本地拉取命令："
+          echo "docker pull $TARGET_IMAGE"
+          echo "=========================================================="
