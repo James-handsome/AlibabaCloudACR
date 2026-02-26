@@ -22,15 +22,13 @@ jobs:
       - name: Pull and Push to Aliyun
         run: |
           RAW_IMAGE="${{ github.event.inputs.image_name }}"
-          # 定义 Secret 的变量
-          REGISTRY_DOMAIN="crpi-tjpbhu7ev24zh1rq.cn-hangzhou.personal.cr.aliyuncs.com"
-          
+      
           docker pull "$RAW_IMAGE"
           
           SAFE_TAG=$(echo "$RAW_IMAGE" | sed 's/[\/:]/_/g')
           
           # 推送时依然可以使用 Secret 确保安全
-          TARGET_IMAGE="$REGISTRY_DOMAIN/garendeng_zhanhao/james-hub:$SAFE_TAG"
+          TARGET_IMAGE="crpi-tjpbhu7ev24zh1rq.cn-hangzhou.personal.cr.aliyuncs.com/garendeng_zhanhao/james-hub:$SAFE_TAG"
           
           docker tag "$RAW_IMAGE" "$TARGET_IMAGE"
           docker push "$TARGET_IMAGE"
@@ -40,6 +38,7 @@ jobs:
           echo "🚀 阿里云拉取命令："
           echo "docker pull $TARGET_IMAGE" 
           echo "=========================================================="
+
 
 
 
