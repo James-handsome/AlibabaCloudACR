@@ -30,7 +30,7 @@ jobs:
           # 3. 核心修复：处理标签格式
           # 将镜像名中的冒号替换为下划线，确保生成的 TARGET_IMAGE 只有一个冒号
           # 例如: mysql:8.0 -> mysql_8.0
-          SAFE_TAG=$(echo $RAW_IMAGE | sed 's/:/_/g')
+          CLEAN_TAG=$(echo $ORIGINAL_IMAGE | sed 's/[\/:]/_/g')
           
           # 4. 拼接最终镜像地址
           # 格式：Registry地址/命名空间/仓库名:新标签
@@ -45,3 +45,4 @@ jobs:
           echo "🚀 本地拉取命令："
           echo "docker pull $TARGET_IMAGE"
           echo "=========================================================="
+
