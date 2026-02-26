@@ -21,23 +21,23 @@ jobs:
 
       - name: Pull and Push to Aliyun
         run: |
-          # 1. 获取输入值 (如: 1panel/openresty:1.27.1.2)
+          # 1. 获取输入值 (例如: 1panel/openresty:1.27.1.2)
           RAW_IMAGE="${{ github.event.inputs.image_name }}"
-          echo "正在处理镜像: $RAW_IMAGE"
+          echo "📥 正在拉取源镜像: $RAW_IMAGE"
           
           # 2. 从 Docker Hub 拉取
           docker pull "$RAW_IMAGE"
           
-          # 3. 核心修复：生成安全的标签名
-          # 使用 RAW_IMAGE 作为输入，将 / 和 : 全部替换为 _
-          # 这样 1panel/openresty:1.27.1.2 就会变成 1panel_openresty_1.27.1.2
+          # 3. 核心修复：生成唯一的、合法的安全标签 (SAFE_TAG)
+          # 把 RAW_IMAGE 里的所有 / 和 : 都替换成下划线 _
+          # 例子: 1panel/openresty:1.27.1.2 -> 1panel_openresty_1.27.1.2
           SAFE_TAG=$(echo "$RAW_IMAGE" | sed 's/[\/:]/_/g')
           
           # 4. 拼接最终镜像地址
-          # 变量名必须严格一致：$SAFE_TAG
+          # 统一使用 $SAFE_TAG 变量
           TARGET_IMAGE="${{ secrets.ACR_REGISTRY }}/garendeng_zhanhao/james-hub:$SAFE_TAG"
           
-          echo "准备推送至 ACR: $TARGET_IMAGE"
+          echo "📤 准备推送到阿里云: $TARGET_IMAGE"
           
           # 5. 打标签并推送
           docker tag "$RAW_IMAGE" "$TARGET_IMAGE"
@@ -48,5 +48,6 @@ jobs:
           echo "🚀 阿里云拉取命令："
           echo "docker pull $TARGET_IMAGE"
           echo "=========================================================="
+
 
 
