@@ -28,12 +28,13 @@ jobs:
           echo "📥 正在拉取源镜像: $RAW_IMAGE"
           docker pull "$RAW_IMAGE"
           
-          # 3. 核心修复：处理标签格式（包含小写转换）
-          # sed 's/[\/:]/_/g' : 将 / 和 : 替换为 _
-          # tr '[:upper:]' '[:lower:]' : 将大写字母强制转为小写，解决 Docker 规范报错
-          SAFE_TAG=$(echo "$RAW_IMAGE" | sed 's/[\/:]/_/g' | tr '[:upper:]' '[:lower:]')
+          # 3. 核心修复：处理标签格式（仅替换非法字符，保留大小写）
+          # 仅将 / 和 : 替换为 _，不再使用 tr 转换小写
+          SAFE_TAG=$(echo "$RAW_IMAGE" | sed 's/[\/:]/_/g')
           
           # 4. 拼接最终镜像地址
+          # 注意：这里的仓库路径 james-hub 必须是小写的（由阿里云后台决定）
+          # 我们只在冒号后的 Tag 部分保留可能的大写
           TARGET_IMAGE="crpi-tjpbhu7ev24zh1rq.cn-hangzhou.personal.cr.aliyuncs.com/garendeng_zhanhao/james-hub:$SAFE_TAG"
           
           # 5. 打标签并推送
@@ -48,6 +49,3 @@ jobs:
           echo "📦 源镜像名称: $RAW_IMAGE"
           echo "🏷️ 转换后标签: $SAFE_TAG"
           echo "=========================================================="
-
-
-
