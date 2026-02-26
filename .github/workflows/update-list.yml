@@ -2,8 +2,8 @@ name: Update Image List
 
 on:
   schedule:
-    - cron: '0 * * * *' # 每小时自动运行一次
-  workflow_dispatch: # 支持你在 Actions 页面手动点击运行
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
   update:
@@ -24,50 +24,57 @@ jobs:
           from alibabacloud_tea_openapi import models as open_api_models
           from alibabacloud_cr20181201 import models as cr_20181201_models
 
-          # 初始化配置
+          # 初始化配置 (Config)
           config = open_api_models.Config(
               access_key_id=os.environ['AK_ID'],
               access_key_secret=os.environ['AK_SECRET'],
-              region_id='cn-hangzhou'
+              endpoint='cr.cn-hangzhou.aliyuncs.com'
           )
           client = Client(config)
           
-          # 你的实例信息
-          instance_id = 'crpi-tjpbhu7ev24zh1rq'
-          namespace = 'garendeng_zhanhao'
-          repo = 'james-hub'
+          # 变量定义
+          INSTANCE_ID = 'crpi-tjpbhu7ev24zh1rq'
+          NAMESPACE = 'garendeng_zhanhao'
+          REPO_NAME = 'james-hub'
 
           try:
-              # 1. 查询 RepoId
+              # 1. 按照官方文档获取仓库详情以拿到 repo_id
               list_repo_req = cr_20181201_models.ListRepositoryRequest(
-                  instance_id=instance_id,
-                  repo_namespace=namespace,
-                  repo_name=repo
+                  instance_id=INSTANCE_ID,
+                  repo_namespace=NAMESPACE,
+                  repo_name=REPO_NAME
               )
-              repos = client.list_repository(list_repo_req)
+              repo_resp = client.list_repository(list_repo_req)
               
-              if not repos.body.repositories:
-                  raise Exception("找不到该镜像仓库，请检查名称是否正确")
+              if not repo_resp.body.repositories:
+                  raise Exception(f"未找到仓库: {REPO_NAME}")
               
-              repo_id = repos.body.repositories[0].repo_id
-              print(f"找到 RepoId: {repo_id}")
+              target_repo_id = repo_resp.body.repositories[0].repo_id
 
-              # 2. 查询 Tag 列表
-              tag_req = cr_20181201_models.ListRepoTagRequest(
-                  instance_id=instance_id,
-                  repo_id=repo_id,
+              # 2. 按照官方文档 ListRepoTagRequest 结构查询
+              # 对应你给的 node.js 代码中的 new cr20181201.ListRepoTagRequest
+              list_tag_req = cr_20181201_models.ListRepoTagRequest(
+                  instance_id=INSTANCE_ID,
+                  repo_id=target_repo_id,
                   page_size=100
               )
-              tag_res = client.list_repo_tag(tag_req)
-              tags = [item.tag for item in tag_res.body.images]
               
-              # 写入 data.json
+              tag_resp = client.list_repo_tag(list_tag_req)
+              
+              # 提取所有 tag 名字
+              tags = [item.tag for item in tag_resp.body.images]
+              print(f"成功获取标签: {tags}")
+
+              # 保存结果
+              result = {
+                  "images": tags,
+                  "update_time": os.popen('date').read().strip()
+              }
               with open('data.json', 'w') as f:
-                  json.dump({"images": tags, "update_time": os.popen('date').read().strip()}, f)
-              print("data.json 生成成功")
+                  json.dump(result, f, indent=2)
 
           except Exception as e:
-              print(f"运行出错: {e}")
+              print(f"执行失败: {e}")
               exit(1)
           EOF
 
@@ -76,5 +83,5 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
           git add data.json
-          git commit -m "自动更新镜像列表" || exit 0
+          git commit -m "chore: 按照阿里云官方文档规范更新镜像列表" || exit 0
           git push
