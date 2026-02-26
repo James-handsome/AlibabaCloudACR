@@ -1,18 +1,4 @@
-name: Update Image List
-
-on:
-  schedule:
-    - cron: '0 * * * *' # 每小时运行一次
-  workflow_dispatch: # 支持手动运行
-
-jobs:
-  update:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Fetch from Aliyun
+- name: Fetch from Aliyun
         env:
           AK_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
           AK_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
@@ -24,7 +10,7 @@ jobs:
           from alibabacloud_tea_openapi import models as open_api_models
           from alibabacloud_cr20181201 import models as cr_20181201_models
 
-          # 初始化配置
+          # 初始化客户端
           config = open_api_models.Config(
               access_key_id=os.environ['AK_ID'],
               access_key_secret=os.environ['AK_SECRET'],
@@ -32,34 +18,45 @@ jobs:
           )
           client = Client(config)
           
-          # 修复点：先创建请求对象，再手动赋值属性，这样更兼容
-          request = cr_20181201_models.ListRepoTagRequest()
-          request.instance_id = 'crpi-tjpbhu7ev24zh1rq'
-          request.namespace_name = 'garendeng_zhanhao' # 如果还报错，改为 repo_namespace
-          request.repo_name = 'james-hub'
-          request.page_size = 100
+          instance_id = 'crpi-tjpbhu7ev24zh1rq'
+          namespace = 'garendeng_zhanhao'
+          repo_name = 'james-hub'
 
           try:
-              response = client.list_repo_tag(request)
-              tags = [item.tag for item in response.body.images]
-              print(f"成功获取到 {len(tags)} 个镜像标签")
+              # 第一步：根据名字查询 RepoId
+              list_repo_req = cr_20181201_models.ListRepositoryRequest(
+                  instance_id=instance_id,
+                  repo_name=repo_name,
+                  repo_namespace=namespace
+              )
+              repos = client.list_repository(list_repo_req)
               
-              with open('data.json', 'w') as f:
-                  json.dump({"images": tags, "update_time": os.popen('date').read().strip()}, f)
-          except Exception as e:
-              print(f"获取数据失败: {e}")
-              # 尝试兼容性备选方案
-              request.repo_namespace = 'garendeng_zhanhao'
-              response = client.list_repo_tag(request)
-              tags = [item.tag for item in response.body.images]
-              with open('data.json', 'w') as f:
-                  json.dump({"images": tags, "update_time": os.popen('date').read().strip()}, f)
-          EOF
+              if not repos.body.repositories:
+                  raise Exception(f"找不到仓库: {namespace}/{repo_name}")
+              
+              # 拿到那个关键的身份证号
+              repo_id = repos.body.repositories[0].repo_id
+              print(f"找到 RepoId: {repo_id}")
 
-      - name: Push data.json
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add data.json
-          git commit -m "update list" || exit 0
-          git push
+              # 第二步：使用 RepoId 查询 Tag 列表
+              tag_req = cr_20181201_models.ListRepoTagRequest(
+                  instance_id=instance_id,
+                  repo_id=repo_id,
+                  page_size=100
+              )
+              tag_res = client.list_repo_tag(tag_req)
+              tags = [item.tag for item in tag_res.body.images]
+              
+              print(f"成功获取到标签: {tags}")
+              
+              # 写入文件
+              with open('data.json', 'w') as f:
+                  json.dump({
+                      "images": tags, 
+                      "update_time": os.popen('date').read().strip()
+                  }, f)
+
+          except Exception as e:
+              print(f"出错了: {e}")
+              exit(1) # 让 Action 报错，方便我们排查
+          EOF
