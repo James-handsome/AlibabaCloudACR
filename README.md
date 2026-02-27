@@ -19,7 +19,7 @@ ALIBABA_CLOUD_ACCESS_KEY_ID: 阿里云 AK（用于 API 同步列表）。
 ALIBABA_CLOUD_ACCESS_KEY_SECRET: 阿里云 SK。
 
 
-
+##  拉取镜像操作
 ### 1. 登录阿里云 Container Registry
 ```yml
 docker login --username=exzhanhao crpi-tjpbhu7ev24zh1rq.cn-hangzhou.personal.cr.aliyuncs.com
