@@ -1,10 +1,3 @@
-## 🚀 核心功能
-自动化转换： 自动将 1panel/openresty:1.27 格式转换为符合 ACR 规范的标签 1panel_openresty_1.27。
-
-规范兼容： 自动处理 Docker 镜像库对大写字母的限制。
-
-前端同步： 每次同步完成后自动刷新 data.json，实时更新镜像列表网页。
-
 ## 🛠️ 使用方法
 在 Actions 页面点击 Docker Image Sync to ACR。
 
